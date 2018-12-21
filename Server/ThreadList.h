@@ -5,7 +5,6 @@
 #include <thread>
 #include <iostream>
 
-
 struct Node {
 	Conversation* aConversation;	// 会话窗口
 	thread* tConversation;			// 会话接收数据线程
@@ -14,6 +13,7 @@ struct Node {
 };
 
 class Linklist {
+	friend  void conversationProcess(Conversation* aConversation, Linklist* aLinklist);
 private:
 	Node * Head;
 	mySocket fatherSocket;

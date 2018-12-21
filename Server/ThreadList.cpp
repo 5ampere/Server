@@ -7,7 +7,7 @@ void conversationThread(Conversation* aConversation, mySocket* fatherSocket)
 }
 
 // 该线程处理会话来的数据（用户编写）
-void conversationProcess(Conversation* aConversation)
+void conversationProcess(Conversation* aConversation, Linklist* aLinklist)
 {
 	while (aConversation->ifConnectSuccess() == 0);		// 等待到连接成功
 	while (true)
@@ -15,13 +15,39 @@ void conversationProcess(Conversation* aConversation)
 		if (aConversation->ifReceiveMessage() == 1)					// 若有消息则进行处理
 		{
 			/* 用户自行编写数据处理代码 begin */
-			cout << aConversation->ClientAddress + ":  " << aConversation->receiveMessage() << endl;
+			/*
+			此服务器用于智能门锁的sim800模块与用户的手机移动端进行通讯
+			发送数据格式 ：
+				目标IP（字符串）\r\n
+				数据内容（字符串）\n
+			服务器根据目标IP将客户端A发送的 ‘数据内容’ 转发到 ‘目标IP’对应的客户端B
+			*/
+			static char times = 0;
+			static string str[2];
+			str[times] = aConversation->receiveMessage();
+			times++;
+			if (times == 2)		// 接收完一次数据包
+			{
+				times = 0;
+
+				Node *temp;
+				temp = aLinklist->Head;
+				while (temp)		// 遍历所有会话，查找是否有目标IP
+				{
+					if (temp->aConversation->ClientAddress+"\r\n" == str[0])
+					{
+						temp->aConversation->sendMessage(str[1]);
+						cout << "转发成功！" << endl;
+					}
+					temp = temp->next;
+				}
+			}
 			/* 用户自行编写数据处理代码 end */
 		}
 	}
 }
 
-// 动态处理会话链表的线程
+// 调用此函数，开启动态处理会话链表的线程
 void listProcessThread(Linklist& myList)
 {
 	thread listProcess(&Linklist::listProcess, myList);
@@ -89,7 +115,7 @@ void Linklist::Insert() {
 	({
 		aConversation,
 		new thread(conversationThread, aConversation, &fatherSocket),
-		new thread(conversationProcess, aConversation),
+		new thread(conversationProcess, aConversation, this),
 		NULL
 	});
 	aNode->tConversation->detach();
