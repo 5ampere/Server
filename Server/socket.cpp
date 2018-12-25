@@ -1,4 +1,5 @@
 #include "socket.h"
+#include <windows.h>
 #include <iostream>
 using namespace std;
 
@@ -31,7 +32,9 @@ int Conversation::createConversation(mySocket& aSocket)
 		else 
 		{
 			ifConSucc = 2;
+			return 0;
 		}
+		Sleep(10);
 	}
 }
 

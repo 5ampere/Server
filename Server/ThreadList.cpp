@@ -1,42 +1,54 @@
 #include "ThreadList.h"
+#include <windows.h>
 
 // 开启一个会话线程并不断接受消息
 void conversationThread(Conversation* aConversation, mySocket* fatherSocket)
 {
 	aConversation->createConversation(*fatherSocket);
+	return;
 }
 
 // 该线程处理会话来的数据（用户编写）
 void conversationProcess(Conversation* aConversation, Linklist* aLinklist)
 {
-	while (aConversation->ifConnectSuccess() == 0);		// 等待到连接成功
+	while (aConversation->ifConnectSuccess() == 0)Sleep(200);		// 等待到连接成功
 	while (true)
 	{
+		if (aConversation->ifConnectSuccess() == 2) return;			// 若已断开连接则函数结束
 		if (aConversation->ifReceiveMessage() == 1)					// 若有消息则进行处理
 		{
 			/* 用户自行编写数据处理代码 begin */
 			/*
 			此服务器用于智能门锁的sim800模块与用户的手机移动端进行通讯
 			发送数据格式 ：
-				目标IP（字符串）\r\n
-				数据内容（字符串）\n
-			服务器根据目标IP将客户端A发送的 ‘数据内容’ 转发到 ‘目标IP’对应的客户端B
+				第一句：From本机ID（字符串）
+				第二句：To目标ID（字符串）
+				第三句：Dat数据内容（字符串）
+			服务器根据目标ID将客户端A发送的 ‘数据内容’ 转发到 ‘目标ID’对应的客户端B
 			*/
-			static char times = 0;
-			static string str[2];
-			str[times] = aConversation->receiveMessage();
-			times++;
-			if (times == 2)		// 接收完一次数据包
+			string str;
+			str = aConversation->receiveMessage();
+			if (str.find("From") != -1){
+				str.replace(0, 4, "");
+				cout << str << endl;
+				aConversation->FromID = str;
+			}
+			if (str.find("To") != -1) {
+				str.replace(0, 2, "");
+				cout << str << endl;
+				aConversation->ToID = str;
+			}
+			if (str.find("Dat") != -1)
 			{
-				times = 0;
-
+				str.replace(0, 3, "");
+				cout << str << endl;
 				Node *temp;
 				temp = aLinklist->Head;
 				while (temp)		// 遍历所有会话，查找是否有目标IP
 				{
-					if (temp->aConversation->ClientAddress+"\r\n" == str[0])
+					if (temp->aConversation->FromID == aConversation->ToID && aConversation->ToID != "")
 					{
-						temp->aConversation->sendMessage(str[1]);
+						temp->aConversation->sendMessage(str);		// 发送数据部分
 						cout << "转发成功！" << endl;
 					}
 					temp = temp->next;
@@ -44,6 +56,8 @@ void conversationProcess(Conversation* aConversation, Linklist* aLinklist)
 			}
 			/* 用户自行编写数据处理代码 end */
 		}
+		else
+			Sleep(50);
 	}
 }
 
@@ -96,6 +110,7 @@ void Linklist::listProcess()
 		}
 		temp = Head;
 		j = 0;
+		Sleep(200);
 	}
 }
 
@@ -136,6 +151,9 @@ void Linklist::Delete(int i) {
 	Node *s;
 	s = temp->next;
 	temp->next = s->next;
+	delete s->tConversation;
+	delete s->tProcess;
+	delete s->aConversation;
 	delete s;
 
 	cout << "会话关闭！" << endl;

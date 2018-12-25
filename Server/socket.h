@@ -18,13 +18,15 @@ public:
 	int ifConnectSuccess(int i = -1);
 	void sendMessage(string mess);
 	string receiveMessage();
-	string ClientAddress;
+	string FromID;
+	string ToID;
 	char ifGetMessage;
 private:
 	SOCKET sClient;
 	sockaddr_in remoteAddr;
 	char ifConSucc;
 	string mess;
+	string ClientAddress;
 	int nAddrlen = sizeof(remoteAddr);
 	char revData[255];
 	int ret;
