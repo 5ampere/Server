@@ -110,7 +110,7 @@ void Linklist::listProcess()
 		}
 		temp = Head;
 		j = 0;
-		Sleep(200);
+		Sleep(25);
 	}
 }
 
@@ -151,12 +151,11 @@ void Linklist::Delete(int i) {
 	Node *s;
 	s = temp->next;
 	temp->next = s->next;
-	delete s->tConversation;
+	cout << "来自" << s->aConversation->FromID << "的会话关闭！" << endl;
 	delete s->tProcess;
+	delete s->tConversation;
 	delete s->aConversation;
 	delete s;
-
-	cout << "会话关闭！" << endl;
 }
 
 
